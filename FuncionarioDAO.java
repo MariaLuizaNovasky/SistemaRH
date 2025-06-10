@@ -25,9 +25,9 @@ public class FuncionarioDAO {
 	            if (rs.next()) {
 	                String senhaNoBanco = rs.getString("senha");
 	                return senhaNoBanco.equals(senha);
-	                // Se usar hash: return BCrypt.checkpw(senha, senhaNoBanco);
+	              
 	            } else {
-	                return false; // Usuário não encontrado
+	                return false; 
 	            }
 
 	        } catch (SQLException e) {
