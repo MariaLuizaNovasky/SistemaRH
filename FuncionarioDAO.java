@@ -3,9 +3,40 @@ package RH;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.ResultSet;
 
 public class FuncionarioDAO {
+	
+	
+	 public boolean autenticar(String usuario, String senha) {
+	        Connection conexao = Bd.conectar();
 
+	        if (conexao == null) {
+	            System.out.println("Erro na conexão com o banco.");
+	            return false;
+	        }
+
+	        String sql = "SELECT senha FROM funcionario WHERE cpf = ?";
+
+	        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+	            stmt.setString(1, usuario);
+	            ResultSet rs = stmt.executeQuery();
+
+	            if (rs.next()) {
+	                String senhaNoBanco = rs.getString("senha");
+	                return senhaNoBanco.equals(senha);
+	                // Se usar hash: return BCrypt.checkpw(senha, senhaNoBanco);
+	            } else {
+	                return false; // Usuário não encontrado
+	            }
+
+	        } catch (SQLException e) {
+	            System.out.println("Erro na autenticação: " + e.getMessage());
+	            return false;
+	        }
+	    }
+
+ 
     public boolean salvar(Funcionario funcionario) {
         Connection conexao = Bd.conectar();
 
@@ -14,11 +45,8 @@ public class FuncionarioDAO {
             return false;
         }
 
-        String sql = "INSERT INTO funcionario (nome, cpf, sexo, estado_civil, data_nascimento, data_admissao, data_demissao, cargo, perfil, salario_base, status, matricula) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        
-        
+        String sql = "INSERT INTO funcionario (nome, cpf, sexo, estado_civil, data_nascimento, data_admissao, data_demissao, cargo, perfil, salario_base, status, matricula, senha)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
             stmt.setString(1, funcionario.getNome());
@@ -44,28 +72,14 @@ public class FuncionarioDAO {
             stmt.setDouble(10, funcionario.getSalarioBase());
             stmt.setBoolean(11, funcionario.isStatus());
             stmt.setInt(12, funcionario.getMatricula());
+            stmt.setString(13, funcionario.getSenha());
 
-
-            int resultado = stmt.executeUpdate();
-
-            if (resultado > 0) {
-                System.out.println("Funcionário cadastrado com sucesso!");
-                System.out.println("Matrícula: " + funcionario.getMatricula());
-
-                return true;
-            } else {
-                System.out.println("Erro ao cadastrar funcionário.");
-                return false;
-            }
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
 
         } catch (SQLException e) {
-            System.out.println("Erro ao salvar no banco: " + e.getMessage());
+            System.out.println("Erro ao salvar funcionário: " + e.getMessage());
             return false;
-        } finally {
-            Bd.desconectar(conexao);
         }
-        
-       
     }
-    
 }
