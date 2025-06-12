@@ -24,11 +24,17 @@ public class FolhaPagamento {
     }
 
     public double calcularTotalDescontos() {
-        return descontos.stream().mapToDouble(Descontos::getValor).sum();
+        if (descontos == null) return 0.0;
+        return descontos.stream()
+                .mapToDouble(d -> d.calcularValor(salarioBruto))
+                .sum();
     }
 
     public double calcularTotalBeneficios() {
-        return beneficios.stream().mapToDouble(Beneficios::getValor).sum();
+        if (beneficios == null) return 0.0;
+        return beneficios.stream()
+                .mapToDouble(b -> b.calcularValor(salarioBruto))
+                .sum();
     }
 
     public void calcularSalarioLiquido() {
@@ -65,6 +71,7 @@ public class FolhaPagamento {
 
     public void setDescontos(List<Descontos> descontos) {
         this.descontos = descontos;
+        calcularSalarioLiquido(); 
     }
 
     public List<Beneficios> getBeneficios() {
@@ -73,6 +80,7 @@ public class FolhaPagamento {
 
     public void setBeneficios(List<Beneficios> beneficios) {
         this.beneficios = beneficios;
+        calcularSalarioLiquido(); 
     }
 
     public double getSalarioBruto() {
@@ -81,6 +89,7 @@ public class FolhaPagamento {
 
     public void setSalarioBruto(double salarioBruto) {
         this.salarioBruto = salarioBruto;
+        calcularSalarioLiquido(); 
     }
 
     public double getSalarioLiquido() {
