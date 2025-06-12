@@ -78,7 +78,7 @@ public class FolhaPontoDAO {
                 folha.setHorasNegativas(rs.getDouble("horasNegativas"));
                 folha.setSaldoHoras(rs.getDouble("saldoHoras"));
 
-                Funcionario funcionario = new Funcionario();
+                Funcionario funcionario = Funcionario();
                 funcionario.setMatricula(rs.getInt("matricula"));
                 folha.setFuncionario(funcionario);
 
@@ -96,7 +96,12 @@ public class FolhaPontoDAO {
         return null;
     }
 
-    public List<FolhaPonto> listarPorFuncionario(int matricula) {
+    public Funcionario Funcionario() {
+        return new Funcionario();
+    }
+
+
+	public List<FolhaPonto> listarPorFuncionario(int matricula) {
         List<FolhaPonto> lista = new ArrayList<>();
         Connection connection = Bd.conectar();
         if (connection == null) return lista;
@@ -117,7 +122,7 @@ public class FolhaPontoDAO {
                 folha.setHorasNegativas(rs.getDouble("horasNegativas"));
                 folha.setSaldoHoras(rs.getDouble("saldoHoras"));
 
-                Funcionario funcionario = new Funcionario();
+                Funcionario funcionario = Funcionario();
                 funcionario.setMatricula(rs.getInt("matricula"));
                 folha.setFuncionario(funcionario);
 
