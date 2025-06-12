@@ -1,68 +1,80 @@
 package RH;
 
 import java.sql.*;
-import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RegistrarPontoDAO {
 
-    public boolean salvar(RegistrarPonto ponto) {
-        Connection connection = Bd.conectar();
+    public List<RegistrarPonto> listarPorMesEAno(int matricula, int mes, int ano) {
+    List<RegistrarPonto> lista = new ArrayList<>();
+    Connection con = Bd.conectar();
 
-        if (connection == null) {
-            System.out.println("Erro na conexão com o banco.");
-            return false;
+    if (con == null) return lista;
+
+    try {
+        String sql = "SELECT * FROM ponto WHERE matricula = ? AND MONTH(data_registro) = ? AND YEAR(data_registro) = ? ORDER BY data_registro";
+        PreparedStatement stmt = con.prepareStatement(sql);
+        stmt.setInt(1, matricula);
+        stmt.setInt(2, mes);
+        stmt.setInt(3, ano);
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            RegistrarPonto rp = new RegistrarPonto();
+            rp.setData_registro(rs.getDate("data_registro").toLocalDate());
+            rp.setHora_entrada(rs.getTime("hora_entrada") != null ? rs.getTime("hora_entrada").toLocalTime() : null);
+            rp.setHora_saida_almoco(rs.getTime("hora_saida_almoco") != null ? rs.getTime("hora_saida_almoco").toLocalTime() : null);
+            rp.setHora_volta_almoco(rs.getTime("hora_volta_almoco") != null ? rs.getTime("hora_volta_almoco").toLocalTime() : null);
+            rp.setHora_saida_final(rs.getTime("hora_saida_final") != null ? rs.getTime("hora_saida_final").toLocalTime() : null);
+            lista.add(rp);
         }
 
-        try {
-            String coluna = null;
-            LocalTime hora = null;
-
-            if (ponto.getHora_entrada() != null) {
-                coluna = "hora_entrada";
-                hora = ponto.getHora_entrada();
-            } else if (ponto.getHora_saida_almoco() != null) {
-                coluna = "hora_saida_almoco";
-                hora = ponto.getHora_saida_almoco();
-            } else if (ponto.getHora_volta_almoco() != null) {
-                coluna = "hora_volta_almoco";
-                hora = ponto.getHora_volta_almoco();
-            } else if (ponto.getHora_saida_final() != null) {
-                coluna = "hora_saida_final";
-                hora = ponto.getHora_saida_final();
-            }
-
-            if (coluna == null || hora == null) {
-                System.out.println("Nenhum ponto a registrar.");
-                return false;
-            }
-
-            String updateSql = "UPDATE ponto SET " + coluna + " = ? WHERE matricula = ? AND data_registro = ?";
-            PreparedStatement updateStmt = connection.prepareStatement(updateSql);
-            updateStmt.setTime(1, Time.valueOf(hora));
-            updateStmt.setInt(2, ponto.getMatricula());
-            updateStmt.setDate(3, Date.valueOf(ponto.getData_registro()));
-            int rowsUpdated = updateStmt.executeUpdate();
-            updateStmt.close();
-
-            if (rowsUpdated == 0) {
-                String insertSql = "INSERT INTO ponto (matricula, data_registro, " + coluna + ") VALUES (?, ?, ?)";
-                PreparedStatement insertStmt = connection.prepareStatement(insertSql);
-                insertStmt.setInt(1, ponto.getMatricula());
-                insertStmt.setDate(2, Date.valueOf(ponto.getData_registro()));
-                insertStmt.setTime(3, Time.valueOf(hora));
-                insertStmt.executeUpdate();
-                insertStmt.close();
-                System.out.println("Registro de ponto criado e salvo com sucesso!");
-            } else {
-                System.out.println("Ponto atualizado com sucesso!");
-            }
-
-            connection.close();
-            return true;
-
-        } catch (SQLException e) {
-            System.out.println("Erro ao salvar ponto: " + e.getMessage());
-            return false;
-        }
+        rs.close();
+        stmt.close();
+        con.close();
+    } catch (Exception e) {
+        System.out.println("Erro ao listar pontos: " + e.getMessage());
     }
+
+    return lista;
+}
+
+	public void registrar(RegistrarPonto ponto) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void salvar(RegistrarPonto ponto) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public int contarFaltas(int matricula, int mes, int ano) {
+	    int faltas = 0;
+	    Connection conn = Bd.conectar();
+
+	    String sql = "SELECT COUNT(*) AS faltas " +
+	                 "FROM ponto " +
+	                 "WHERE MONTH(data) = ? AND YEAR(data) = ? AND matricula = ? " +
+	                 "AND (entrada IS NULL OR entrada = '') " +
+	                 "AND (saida_almoco IS NULL OR saida_almoco = '') " +
+	                 "AND (retorno_almoco IS NULL OR retorno_almoco = '') " +
+	                 "AND (saida_final IS NULL OR saida_final = '')";
+
+	    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+	        stmt.setInt(1, mes);
+	        stmt.setInt(2, ano);
+	        stmt.setInt(3, matricula);
+
+	        ResultSet rs = stmt.executeQuery();
+	        if (rs.next()) {
+	            faltas = rs.getInt("faltas");
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+
+	    return faltas;
+	}
 }
