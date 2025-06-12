@@ -11,8 +11,9 @@ public class FolhaPonto {
     private double horasExtras;
     private double horasNegativas;
     private double saldoHoras;
-    private Funcionario funcionario; 
-
+    private Funcionario funcionario;
+	private List<RegistrarPonto> registros; 
+    
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -74,5 +75,12 @@ public class FolhaPonto {
             horasNegativas,
             saldoHoras
         );
+    }
+    public List<RegistrarPonto> getRegistros() {
+        return registros;
+    }
+
+    public void setRegistros(List<RegistrarPonto> registros) {
+        this.registros = registros;
     }
 }
