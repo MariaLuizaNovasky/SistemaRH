@@ -2,6 +2,7 @@ package RH;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,50 +14,125 @@ public class FolhaPagamentoDAO {
         Connection conn = Bd.conectar();
         if (conn == null) return false;
 
-        String sql = "INSERT INTO folhapagamento (data, matricula, salario_base, descontos, beneficios, salario_liquido) VALUES (?, ?, ?, ?, ?, ?)";
+        String sqlFolha = "INSERT INTO FolhaPagamento (data, matricula, salario_bruto, salario_liquido) VALUES (?, ?, ?, ?)";
 
         try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setDate(1, new java.sql.Date(folha.getData().getTime()));
-            stmt.setInt(2, folha.getFuncionario().getMatricula()); 
-            stmt.setDouble(3, folha.getSalarioBruto());
-            stmt.setDouble(4, folha.calcularTotalDescontos());
-            stmt.setDouble(5, folha.calcularTotalBeneficios());
-            stmt.setDouble(6, folha.getSalarioLiquido());
-            stmt.executeUpdate();
-            stmt.close();
+            conn.setAutoCommit(false);
+
+            PreparedStatement stmtFolha = conn.prepareStatement(sqlFolha, Statement.RETURN_GENERATED_KEYS);
+            stmtFolha.setDate(1, new java.sql.Date(folha.getData().getTime()));
+            stmtFolha.setInt(2, folha.getFuncionario().getMatricula());
+            stmtFolha.setDouble(3, folha.getSalarioBruto());
+            stmtFolha.setDouble(4, folha.getSalarioLiquido());
+            stmtFolha.executeUpdate();
+
+            ResultSet rs = stmtFolha.getGeneratedKeys();
+            int idFolha = -1;
+            if (rs.next()) {
+                idFolha = rs.getInt(1);
+            }
+            stmtFolha.close();
+
+            String sqlBenef = "INSERT INTO FolhaBeneficio (id_folha, nome_beneficio, valor) VALUES (?, ?, ?)";
+            PreparedStatement stmtBenef = conn.prepareStatement(sqlBenef);
+            for (Beneficios b : folha.getBeneficios()) {
+                double valor = b.calcularValor(folha.getSalarioBruto());
+                stmtBenef.setInt(1, idFolha);
+                stmtBenef.setString(2, b.name());
+                stmtBenef.setDouble(3, valor);
+                stmtBenef.addBatch();
+            }
+            stmtBenef.executeBatch();
+            stmtBenef.close();
+
+            String sqlDesc = "INSERT INTO FolhaDesconto (id_folha, nome_desconto, valor) VALUES (?, ?, ?)";
+            PreparedStatement stmtDesc = conn.prepareStatement(sqlDesc);
+            for (Descontos d : folha.getDescontos()) {
+                double valor = d.calcularValor(folha.getSalarioBruto());
+                stmtDesc.setInt(1, idFolha);
+                stmtDesc.setString(2, d.name());
+                stmtDesc.setDouble(3, valor);
+                stmtDesc.addBatch();
+            }
+            stmtDesc.executeBatch();
+            stmtDesc.close();
+
+            conn.commit();
             conn.close();
             return true;
+
         } catch (SQLException e) {
             e.printStackTrace();
+            try {
+                if (conn != null) conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             return false;
         }
     }
 
-    public List<FolhaPagamento> listarTodos() {
-        List<FolhaPagamento> lista = new ArrayList<>();
+    public FolhaPagamento buscarPorFuncionarioMesAno(int matricula, int mes, int ano) {
         Connection conn = Bd.conectar();
-        if (conn == null) return lista;
+        FolhaPagamento folha = null;
 
-        String sql = "SELECT * FROM folhapagamento";
+        String sql = "SELECT * FROM FolhaPagamento WHERE MONTH(data) = ? AND YEAR(data) = ? AND matricula = ?";
 
-        try {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, mes);
+            stmt.setInt(2, ano);
+            stmt.setInt(3, matricula);
             ResultSet rs = stmt.executeQuery();
 
-            while (rs.next()) {
-                FolhaPagamento folha = new FolhaPagamento();
-                folha.setIdFolha(rs.getInt("matricula"));
+            if (rs.next()) {
+                folha = new FolhaPagamento();
+                folha.setIdFolha(rs.getInt("id_folha"));
                 folha.setData(rs.getDate("data"));
-                folha.setSalarioBruto(rs.getDouble("salario_base"));
+                folha.setSalarioBruto(rs.getDouble("salario_bruto"));
                 folha.setSalarioLiquido(rs.getDouble("salario_liquido"));
 
-                lista.add(folha);
+                folha.setBeneficios(buscarBeneficiosDaFolha(folha.getIdFolha()));
+                folha.setDescontos(buscarDescontosDaFolha(folha.getIdFolha()));
+
+                folha.calcularSalarioLiquido();
             }
 
-            rs.close();
-            stmt.close();
-            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return folha;
+    }
+
+    public List<Beneficios> buscarBeneficiosDaFolha(int idFolha) {
+        List<Beneficios> lista = new ArrayList<>();
+        Connection conn = Bd.conectar();
+
+        String sql = "SELECT nome_beneficio FROM FolhaBeneficio WHERE id_folha = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idFolha);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                lista.add(Beneficios.valueOf(rs.getString("nome_beneficio")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return lista;
+    }
+
+    public List<Descontos> buscarDescontosDaFolha(int idFolha) {
+        List<Descontos> lista = new ArrayList<>();
+        Connection conn = Bd.conectar();
+
+        String sql = "SELECT nome_desconto FROM FolhaDesconto WHERE id_folha = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idFolha);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                lista.add(Descontos.valueOf(rs.getString("nome_desconto")));
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
