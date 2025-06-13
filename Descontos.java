@@ -1,18 +1,23 @@
 package RH;
 
 public enum Descontos {
-    INSS(200), FGTS(150), 
-    FALTAS(100), 
-    HORAS_NEGATIVAS(80), 
-    VALE_TRANSPORTE(120);
+    INSS(11.0),
+    FGTS(8.0),
+    FALTAS(2.0),
+    HORAS_NEGATIVAS(1.0),
+    VALE_TRANSPORTE(6.0);
 
-    private final double valor;
+    private final double percentual;
 
-    Descontos(double valor) {
-        this.valor = valor;
+    Descontos(double percentual) {
+        this.percentual = percentual;
     }
 
-    public double getValor() {
-        return valor;
+    public double getPercentual() {
+        return percentual;
+    }
+
+    public double calcularValor(double salarioBruto) {
+        return salarioBruto * (percentual / 100);
     }
 }
