@@ -1,17 +1,21 @@
 package RH;
 
 public enum Beneficios {
-    VALE_ALIMENTACAO(150), 
-    VALE_REFEICAO(200), 
-    PLANO_SAUDE(300);
+    VALE_REFEICAO(5.0),
+    VALE_ALIMENTACAO(6.0),
+    PLANO_SAUDE(8.0);
 
-    private final double valor;
+    private final double percentual;
 
-    Beneficios(double valor) {
-        this.valor = valor;
+    Beneficios(double percentual) {
+        this.percentual = percentual;
     }
 
-    public double getValor() {
-        return valor;
+    public double getPercentual() {
+        return percentual;
+    }
+
+    public double calcularValor(double salarioBruto) {
+        return salarioBruto * (percentual / 100);
     }
 }
