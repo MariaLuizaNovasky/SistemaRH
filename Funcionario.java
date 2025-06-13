@@ -17,6 +17,7 @@ public class Funcionario {
     private double salarioBase;
     private boolean status;
     private int matricula;
+    private String senha;
 
     public Funcionario(String nome, String cpf, Sexo sexo, EstadoCivil estadoCivil,
                        LocalDate dataNascimento, LocalDate dataAdmissao,
@@ -34,11 +35,11 @@ public class Funcionario {
         this.perfil = perfil;
         this.salarioBase = salarioBase;
         this.status = status;
-
         this.matricula = gerarMatricula();
     }
 
-  
+    // Getters e Setters
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -78,10 +79,11 @@ public class Funcionario {
     public int getMatricula() { return matricula; }
     public void setMatricula(int matricula) { this.matricula = matricula; }
 
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
+
     private int gerarMatricula() {
         Random random = new Random();
         return random.nextInt(1_000_000);
     }
 }
-
-
